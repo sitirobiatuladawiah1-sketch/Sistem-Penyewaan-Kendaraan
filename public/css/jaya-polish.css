@@ -1,0 +1,689 @@
+/* Final visual polish for Jaya Rental pages. Loaded after page-local styles. */
+:root {
+    --jr-bg: #f4f7fb;
+    --jr-surface: #ffffff;
+    --jr-surface-soft: #f7faf9;
+    --jr-text: #101828;
+    --jr-muted: #667085;
+    --jr-line: #e4e9f2;
+    --jr-primary: #2563eb;
+    --jr-primary-dark: #143c8f;
+    --jr-accent: #f59e0b;
+    --jr-success: #16a34a;
+    --jr-warning: #d97706;
+    --jr-danger: #dc2626;
+    --jr-shadow: 0 16px 38px rgba(15, 23, 42, 0.09);
+}
+
+* {
+    letter-spacing: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    color: var(--jr-text) !important;
+    background:
+        radial-gradient(circle at 8% 0%, rgba(37, 99, 235, 0.10), transparent 28%),
+        radial-gradient(circle at 92% 12%, rgba(96, 165, 250, 0.12), transparent 24%),
+        linear-gradient(180deg, #f8fbff 0%, var(--jr-bg) 42%, #ffffff 100%) !important;
+    font-family: "Segoe UI", Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+    letter-spacing: 0 !important;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    line-height: 1.15 !important;
+}
+
+.wrap,
+.main-container {
+    width: min(1320px, 100%) !important;
+    margin-inline: auto !important;
+    padding: 24px !important;
+}
+
+.hero,
+.header {
+    border-radius: 18px !important;
+    background:
+        linear-gradient(135deg, rgba(20, 60, 143, 0.98), rgba(37, 99, 235, 0.95)),
+        #143c8f !important;
+    box-shadow: var(--jr-shadow) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    align-items: center !important;
+}
+
+.hero > div,
+.header > div {
+    min-width: 0 !important;
+}
+
+.hero h1,
+.header h2,
+.panel h2,
+.history-section h3,
+.section-title h3 {
+    letter-spacing: 0 !important;
+}
+
+.grid-stats,
+.summary-row {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+}
+
+.stat,
+.card-sm,
+.panel,
+.history-section,
+.car-card,
+.card,
+.detail-box,
+.method-box,
+.pickup-card,
+.feature,
+.brand,
+.modal {
+    border-radius: 12px !important;
+    border: 1px solid var(--jr-line) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 252, 251, 0.98)) !important;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05) !important;
+    overflow: hidden !important;
+}
+
+.panel,
+.history-section {
+    padding: 20px !important;
+}
+
+.stat,
+.card-sm {
+    min-height: 112px !important;
+    align-items: center !important;
+    gap: 14px !important;
+    justify-content: space-between !important;
+}
+
+.stat strong,
+.card-sm strong {
+    line-height: 1.1 !important;
+    word-break: break-word !important;
+}
+
+.card-sm > div:first-child,
+.stat > div:first-child {
+    min-width: 0 !important;
+}
+
+.icon-box {
+    width: 56px !important;
+    height: 56px !important;
+    flex: 0 0 56px !important;
+    border-radius: 999px !important;
+    font-weight: 800 !important;
+    color: #143c8f !important;
+}
+
+.panel h2,
+.history-section h3,
+.section-title h3 {
+    color: var(--jr-text) !important;
+    font-size: 20px !important;
+    margin-bottom: 6px !important;
+}
+
+.sub,
+.muted,
+.section-title p,
+.panel p,
+small {
+    color: var(--jr-muted) !important;
+}
+
+.wrap > .grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.85fr) !important;
+    gap: 16px !important;
+    align-items: start !important;
+}
+
+.form-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 12px !important;
+}
+
+.field.full,
+.form-grid .full {
+    grid-column: 1 / -1 !important;
+}
+
+.field,
+.form-group {
+    min-width: 0 !important;
+}
+
+label,
+.field label {
+    color: #344054 !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin-bottom: 6px !important;
+}
+
+input,
+select,
+textarea {
+    min-height: 42px !important;
+    border: 1px solid var(--jr-line) !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: var(--jr-text) !important;
+    outline: none !important;
+    box-shadow: none !important;
+    font-family: inherit !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: rgba(37, 99, 235, 0.72) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.btn,
+.btn-sewa,
+.btn-lihat,
+.btn-exit,
+.btn-submit,
+.tab-btn,
+.btn-primary-figma {
+    border-radius: 8px !important;
+    min-height: 40px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+}
+
+.btn-primary,
+.btn-sewa,
+.btn-lihat,
+.btn-submit,
+.tab-login-active,
+.tab-register-active,
+.btn-login,
+.btn-primary-figma:not(.secondary) {
+    background: linear-gradient(135deg, var(--jr-primary-dark), var(--jr-primary)) !important;
+    color: #fff !important;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24) !important;
+}
+
+.btn-soft,
+.btn-exit,
+.tab-login-passive,
+.tab-register-passive,
+.btn-register,
+.btn-primary-figma.secondary {
+    background: #eef5ff !important;
+    color: #172033 !important;
+    border: 1px solid var(--jr-line) !important;
+}
+
+.btn-danger {
+    background: var(--jr-danger) !important;
+    color: #fff !important;
+}
+
+.table-wrap {
+    overflow-x: auto !important;
+    border: 1px solid var(--jr-line) !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    width: 100% !important;
+}
+
+table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+th {
+    background: #f8fbff !important;
+    color: #475467 !important;
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+}
+
+th,
+td {
+    padding: 12px !important;
+    border-bottom: 1px solid var(--jr-line) !important;
+    vertical-align: top !important;
+    line-height: 1.45 !important;
+}
+
+tbody tr:last-child td {
+    border-bottom: 0 !important;
+}
+
+tbody tr:hover {
+    background: #fbfdff !important;
+}
+
+.row-actions,
+.top-actions,
+.btn-row,
+.mini-form {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+}
+
+.top-actions {
+    justify-content: flex-end !important;
+}
+
+.btn-row {
+    justify-content: flex-start !important;
+}
+
+.mini-form {
+    padding: 10px !important;
+    border: 1px solid var(--jr-line) !important;
+    border-radius: 10px !important;
+    background: #f8fbff !important;
+}
+
+.mini-form input,
+.mini-form select {
+    min-width: 150px !important;
+}
+
+.badge {
+    border-radius: 999px !important;
+    padding: 5px 9px !important;
+}
+
+.badge.success,
+.badge.done {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+}
+
+.badge.warning,
+.badge.pending {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+.badge.danger {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+}
+
+.car-grid,
+.history-list {
+    gap: 14px !important;
+}
+
+.car-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    align-items: stretch !important;
+}
+
+.car-card {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100% !important;
+}
+
+.car-media,
+.vehicle-art {
+    background: linear-gradient(135deg, #e8f1ff, #ffffff) !important;
+}
+
+.vehicle-art {
+    position: relative !important;
+    color: #143c8f !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+}
+
+.vehicle-art.image-failed img,
+.car-media.image-failed img {
+    display: none !important;
+}
+
+.vehicle-art.image-failed::after,
+.car-media.image-failed::after {
+    content: "CAR";
+    color: #143c8f;
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.car-media {
+    height: 184px !important;
+    flex: 0 0 184px !important;
+}
+
+.car-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+    flex: 1 !important;
+}
+
+.car-body .btn-sewa {
+    margin-top: auto !important;
+}
+
+.history-item {
+    border-radius: 12px !important;
+    border-color: var(--jr-line) !important;
+    background: #fff !important;
+    align-items: center !important;
+}
+
+.page {
+    padding: 24px !important;
+}
+
+.page > .card {
+    width: min(1120px, 100%) !important;
+}
+
+.layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.9fr) !important;
+    gap: 16px !important;
+    align-items: start !important;
+}
+
+.page .header {
+    padding: 24px !important;
+    margin-bottom: 20px !important;
+    align-items: center !important;
+}
+
+.page .header h2,
+.page .header .muted {
+    color: #ffffff !important;
+}
+
+.page .header .muted {
+    opacity: 0.86 !important;
+}
+
+.page .header .badge {
+    background: rgba(255,255,255,0.92) !important;
+    color: #1f4fd7 !important;
+}
+
+.page .header .btn-soft {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: rgba(255,255,255,0.65) !important;
+}
+
+.page .grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+}
+
+.page .grid .form-group {
+    margin-bottom: 0 !important;
+}
+
+.map-box {
+    border-radius: 12px !important;
+}
+
+.pickup-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    align-items: stretch !important;
+}
+
+.pickup-card {
+    min-height: 132px !important;
+}
+
+.pickup-card.active {
+    border-color: var(--jr-primary) !important;
+    background: #eff6ff !important;
+}
+
+.qr,
+.qr-mini {
+    border-radius: 10px !important;
+    width: 86px !important;
+    height: 86px !important;
+}
+
+.transaction-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+}
+
+.transaction-card,
+.admin-transaction-card {
+    min-height: 100% !important;
+    border-radius: 14px !important;
+    border: 1px solid var(--jr-line) !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05) !important;
+    overflow: hidden !important;
+}
+
+.admin-card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+}
+
+.transaction-row,
+.info-row {
+    align-items: flex-start !important;
+    min-width: 0 !important;
+}
+
+.transaction-row strong,
+.info-row strong,
+.info-row div {
+    max-width: 60% !important;
+    overflow-wrap: anywhere !important;
+    min-width: 0 !important;
+}
+
+.admin-transaction-head,
+.transaction-head {
+    min-width: 0 !important;
+}
+
+.admin-transaction-code {
+    display: grid !important;
+    justify-items: end !important;
+    gap: 6px !important;
+}
+
+.status-line,
+.payment-line {
+    min-width: 0 !important;
+    align-content: start !important;
+}
+
+.card-form-row {
+    min-width: 0 !important;
+}
+
+.card-form-row .mini-form {
+    margin-top: 0 !important;
+}
+
+.logo-area h2 {
+    color: #ffffff !important;
+}
+
+.logo-area small {
+    color: rgba(248, 251, 255, 0.76) !important;
+}
+
+body:has(.logo-area) {
+    background:
+        radial-gradient(circle at 18% 12%, rgba(91, 140, 255, 0.34), transparent 28%),
+        radial-gradient(circle at 86% 78%, rgba(101, 206, 255, 0.18), transparent 30%),
+        linear-gradient(135deg, #07111f 0%, #12306f 72%) !important;
+}
+
+body:has(.logo-area) .card {
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    backdrop-filter: blur(16px) !important;
+}
+
+.ktp-reminder {
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+    border: 1px solid #bfdbfe !important;
+    background: #eff6ff !important;
+    color: #1e3a8a !important;
+    line-height: 1.55 !important;
+    margin-bottom: 14px !important;
+}
+
+.ktp-reminder strong {
+    display: block !important;
+    color: #143c8f !important;
+    margin-bottom: 4px !important;
+}
+
+.active-rental,
+.notice,
+.alert {
+    border-radius: 12px !important;
+}
+
+body:has(.logo-area) label {
+    color: #ffffff !important;
+}
+
+body:has(.logo-area) input {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+}
+
+body:has(.logo-area) input::placeholder {
+    color: rgba(248, 251, 255, 0.58) !important;
+}
+
+@media (max-width: 980px) {
+    .wrap,
+    .main-container,
+    .page {
+        padding: 16px !important;
+    }
+
+    .wrap > .grid,
+    .layout {
+        grid-template-columns: 1fr !important;
+    }
+
+    .page .grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .hero,
+    .header {
+        display: grid !important;
+        gap: 14px !important;
+        align-items: start !important;
+    }
+
+    .top-actions,
+    .btn-row,
+    .row-actions {
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+    }
+
+    .btn,
+    .btn-sewa,
+    .btn-lihat,
+    .btn-exit {
+        width: 100% !important;
+    }
+
+    .history-item,
+    .card-sm,
+    .stat {
+        align-items: flex-start !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .wrap,
+    .main-container,
+    .page {
+        padding: 12px !important;
+    }
+
+    .panel,
+    .history-section,
+    .card {
+        padding: 16px !important;
+    }
+
+    .hero,
+    .header {
+        padding: 18px !important;
+        border-radius: 14px !important;
+    }
+
+    .mini-form input,
+    .mini-form select,
+    .mini-form button {
+        width: 100% !important;
+    }
+
+    .transaction-grid,
+    .admin-card-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .transaction-row strong,
+    .info-row strong,
+    .info-row div {
+        max-width: none !important;
+        text-align: left !important;
+    }
+
+    th,
+    td {
+        padding: 10px !important;
+    }
+}
