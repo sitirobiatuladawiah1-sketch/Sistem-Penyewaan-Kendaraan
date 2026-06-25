@@ -71,7 +71,7 @@
         td:last-child, th:last-child { text-align:right; white-space:nowrap; }
         tfoot td { font-weight:800; background:#f8fbff; }
         @media (min-width:1180px) {
-            .finance-summary { grid-template-columns:repeat(5, minmax(0, 1fr)); }
+            .finance-summary { grid-template-columns:repeat(4, minmax(0, 1fr)); }
         }
         @media (max-width:620px) {
             .wrap { padding:16px; }
@@ -98,7 +98,10 @@
 
     <div class="finance-summary">
         <div class="finance-card"><div><small>Total Pembayaran Sewa</small><strong>Rp {{ number_format($summary['total_pembayaran_sewa'], 0, ',', '.') }}</strong></div><div class="finance-icon">SW</div></div>
-        <div class="finance-card"><div><small>Total Pembayaran Denda</small><strong>Rp {{ number_format($summary['total_pembayaran_denda'], 0, ',', '.') }}</strong></div><div class="finance-icon">DN</div></div>
+        <div class="finance-card"><div><small>Total Denda Keterlambatan</small><strong>Rp {{ number_format($summary['total_denda_keterlambatan'], 0, ',', '.') }}</strong></div><div class="finance-icon">DK</div></div>
+        <div class="finance-card"><div><small>Total Denda Kerusakan</small><strong>Rp {{ number_format($summary['total_denda_kerusakan'], 0, ',', '.') }}</strong></div><div class="finance-icon">DR</div></div>
+        <div class="finance-card"><div><small>Total Denda Kehilangan</small><strong>Rp {{ number_format($summary['total_denda_kehilangan'], 0, ',', '.') }}</strong></div><div class="finance-icon">DH</div></div>
+        <div class="finance-card"><div><small>Total Seluruh Denda</small><strong>Rp {{ number_format($summary['total_pembayaran_denda'], 0, ',', '.') }}</strong></div><div class="finance-icon">DN</div></div>
         <div class="finance-card"><div><small>Total Pemasukan</small><strong>Rp {{ number_format($summary['total_pemasukan'], 0, ',', '.') }}</strong></div><div class="finance-icon">Rp</div></div>
         <div class="finance-card"><div><small>Transaksi Lunas</small><strong>{{ $summary['jumlah_transaksi_lunas'] }}</strong></div><div class="finance-icon">OK</div></div>
         <div class="finance-card"><div><small>Transaksi Denda</small><strong>{{ $summary['jumlah_transaksi_denda'] }}</strong></div><div class="finance-icon">TR</div></div>

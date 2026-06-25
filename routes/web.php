@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengembalian', [AdminController::class, 'pengembalian'])->name('pengembalian');
         Route::get('/riwayat-perbaikan', [AdminController::class, 'riwayatPerbaikan'])->name('riwayat-perbaikan');
         Route::get('/riwayat-kondisi', [AdminController::class, 'riwayatKondisi'])->name('riwayat-kondisi');
+        Route::get('/riwayat-kerusakan', [AdminController::class, 'riwayatKerusakan'])->name('riwayat-kerusakan');
         Route::get('/laporan-keuangan', [AdminController::class, 'laporanKeuangan'])->name('laporan-keuangan');
         Route::post('/kendaraan', [AdminController::class, 'storeKendaraan'])->name('kendaraan.store');
         Route::get('/kendaraan/{kendaraan}/edit', [AdminController::class, 'editKendaraan'])->name('kendaraan.edit');

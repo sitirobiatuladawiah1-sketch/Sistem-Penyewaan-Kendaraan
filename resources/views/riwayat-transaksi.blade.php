@@ -13,10 +13,12 @@
         .btn { text-decoration:none; }
         .table-wrap { overflow-x:auto; }
         table { width:100%; border-collapse:collapse; }
-        th,td { text-align:left; padding:12px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
+        th,td { text-align:left; padding:12px; border-bottom:1px solid #e5e7eb; vertical-align:top; line-height:1.45; }
         .badge { display:inline-flex; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700; }
         .success { background:#dcfce7; color:#166534; }
         .warning { background:#fef3c7; color:#92400e; }
+        .fine-detail { display:grid; gap:4px; min-width:190px; }
+        .fine-detail small { color:#6b7280; }
     </style>
 </head>
 <body>
@@ -51,7 +53,17 @@
                             <td>{{ $item->tanggal_selesai }}</td>
                             <td>{{ $item->tanggal_pengembalian ?? 'Belum dikembalikan' }}</td>
                             <td>Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
-                            <td>Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</td>
+                            <td>
+                                <div class="fine-detail">
+                                    <small>Keterlambatan: Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</small>
+                                    <small>Kerusakan: Rp {{ number_format($item->denda_kerusakan, 0, ',', '.') }}</small>
+                                    <small>Kehilangan: Rp {{ number_format($item->denda_kehilangan, 0, ',', '.') }}</small>
+                                    <strong>Total: Rp {{ number_format($item->total_denda, 0, ',', '.') }}</strong>
+                                    @if($item->status_denda)
+                                        <small>Status: {{ $item->status_denda }}</small>
+                                    @endif
+                                </div>
+                            </td>
                             <td><span class="badge {{ $item->status_sewa === 'Selesai' ? 'success' : 'warning' }}">{{ $item->status_sewa }}</span></td>
                         </tr>
                     @empty

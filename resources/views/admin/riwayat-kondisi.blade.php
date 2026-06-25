@@ -15,6 +15,8 @@
         .table-wrap { overflow-x:auto; }
         table { width:100%; border-collapse:collapse; }
         th,td { text-align:left; padding:12px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
+        .fine-detail { display:grid; gap:4px; min-width:180px; }
+        .fine-detail small { color:#6b7280; }
     </style>
 </head>
 <body>
@@ -27,6 +29,7 @@
         <div class="top-actions">
             <a class="btn btn-soft" href="{{ route('admin.dashboard') }}">Dashboard</a>
             <a class="btn btn-soft" href="{{ route('admin.pengembalian') }}">Pengembalian Mobil</a>
+            <a class="btn btn-soft" href="{{ route('admin.riwayat-kerusakan') }}">Riwayat Kerusakan</a>
         </div>
     </div>
 
@@ -41,6 +44,7 @@
                         <th>Tanggal Kembali</th>
                         <th>Kondisi Saat Kembali</th>
                         <th>Catatan</th>
+                        <th>Denda</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,9 +59,17 @@
                                 Ambil: {{ $item->catatan_kondisi_ambil ?? '-' }}<br>
                                 Kembali: {{ $item->catatan_pengembalian ?? '-' }}
                             </td>
+                            <td>
+                                <div class="fine-detail">
+                                    <small>Keterlambatan: Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</small>
+                                    <small>Kerusakan: Rp {{ number_format($item->denda_kerusakan, 0, ',', '.') }}</small>
+                                    <small>Kehilangan: Rp {{ number_format($item->denda_kehilangan, 0, ',', '.') }}</small>
+                                    <strong>Total: Rp {{ number_format($item->total_denda, 0, ',', '.') }}</strong>
+                                </div>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6">Belum ada riwayat kondisi kendaraan.</td></tr>
+                        <tr><td colspan="7">Belum ada riwayat kondisi kendaraan.</td></tr>
                     @endforelse
                 </tbody>
             </table>

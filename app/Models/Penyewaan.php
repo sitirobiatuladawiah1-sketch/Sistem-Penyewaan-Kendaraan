@@ -26,6 +26,10 @@ class Penyewaan extends Model
         'status_pembayaran',
         'kurang_bayar',
         'denda_keterlambatan',
+        'denda_kerusakan',
+        'detail_kerusakan',
+        'denda_kehilangan',
+        'detail_kehilangan',
         'status_denda',
         'denda_dibayar_at',
         'tanggal_pengembalian',
@@ -44,6 +48,8 @@ class Penyewaan extends Model
         'booking_expires_at' => 'datetime',
         'paid_at' => 'datetime',
         'denda_dibayar_at' => 'datetime',
+        'detail_kerusakan' => 'array',
+        'detail_kehilangan' => 'array',
     ];
 
     public function kendaraan()
@@ -64,6 +70,11 @@ class Penyewaan extends Model
     public function pengembalianRecords()
     {
         return $this->hasMany(Pengembalian::class, 'penyewaan_id');
+    }
+
+    public function getTotalDendaAttribute(): int
+    {
+        return (int) $this->denda_keterlambatan + (int) $this->denda_kerusakan + (int) $this->denda_kehilangan;
     }
 
     public function getQrPayloadAttribute(): string

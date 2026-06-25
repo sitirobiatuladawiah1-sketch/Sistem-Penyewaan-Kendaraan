@@ -247,6 +247,14 @@
             flex-wrap: wrap;
             align-items: center;
         }
+        .fine-detail {
+            display: grid;
+            gap: 4px;
+        }
+        .fine-detail small {
+            color: var(--muted);
+            line-height: 1.35;
+        }
         .card-form-row {
             display: grid;
             grid-template-columns: 1fr;
@@ -309,6 +317,7 @@
                 <a class="btn btn-light" href="{{ route('admin.riwayat-transaksi') }}">Riwayat Transaksi</a>
                 <a class="btn btn-light" href="{{ route('admin.riwayat-perbaikan') }}">Riwayat Perbaikan</a>
                 <a class="btn btn-light" href="{{ route('admin.riwayat-kondisi') }}">Riwayat Kondisi</a>
+                <a class="btn btn-light" href="{{ route('admin.riwayat-kerusakan') }}">Riwayat Kerusakan</a>
                 <a class="btn btn-light" href="{{ route('admin.laporan-keuangan') }}">Laporan Keuangan</a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
@@ -618,7 +627,36 @@
                             <div class="info-row"><span>Total</span><strong>Rp {{ number_format($item->total_harga, 0, ',', '.') }}</strong></div>
                             <div class="info-row"><span>Bayar</span><strong>Rp {{ number_format($item->jumlah_bayar, 0, ',', '.') }}</strong></div>
                             <div class="info-row"><span>Kurang</span><strong>Rp {{ number_format($item->kurang_bayar, 0, ',', '.') }}</strong></div>
-                            <div class="info-row"><span>Denda</span><strong>Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</strong></div>
+                            <div class="info-row">
+                                <span>Denda</span>
+                                <div class="fine-detail">
+                                    <small>Keterlambatan: Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</small>
+                                    <small>Kerusakan: Rp {{ number_format($item->denda_kerusakan, 0, ',', '.') }}</small>
+                                    <small>Kehilangan: Rp {{ number_format($item->denda_kehilangan, 0, ',', '.') }}</small>
+                                    <strong>Total: Rp {{ number_format($item->total_denda, 0, ',', '.') }}</strong>
+                                    <small>Status: {{ $item->status_denda ?? ($item->total_denda > 0 ? 'Belum dibayar' : '-') }}</small>
+                                </div>
+                            </div>
+                            @if($item->detail_kerusakan)
+                                <div class="info-row">
+                                    <span>Kerusakan</span>
+                                    <div class="fine-detail">
+                                        @foreach($item->detail_kerusakan as $detail)
+                                            <small>{{ $detail['jenis'] ?? '-' }} - {{ $detail['deskripsi'] ?? '-' }} (Rp {{ number_format($detail['biaya'] ?? 0, 0, ',', '.') }})</small>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                            @if($item->detail_kehilangan)
+                                <div class="info-row">
+                                    <span>Kehilangan</span>
+                                    <div class="fine-detail">
+                                        @foreach($item->detail_kehilangan as $detail)
+                                            <small>{{ $detail['barang'] ?? '-' }} (Rp {{ number_format($detail['biaya'] ?? 0, 0, ',', '.') }})</small>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                             <div class="info-row"><span>Kondisi Ambil</span><strong>{{ $item->kondisi_ambil ?? 'Belum diisi' }}</strong></div>
                             <div class="info-row"><span>Kondisi Kembali</span><strong>{{ $item->kondisi_kembali ?? 'Belum diisi' }}</strong></div>
                             <div class="info-row"><span>Metode</span><strong>{{ $item->metode_pembayaran }}</strong></div>
@@ -677,9 +715,14 @@
                                 <input type="date" name="tanggal_pengembalian" value="{{ now()->toDateString() }}" required>
                                 <input type="text" name="kondisi_kembali" value="{{ $item->kondisi_kembali }}" placeholder="Kondisi saat kembali" required>
                                 <input type="text" name="catatan_pengembalian" value="{{ $item->catatan_pengembalian }}" placeholder="Catatan pengembalian" required>
+                                <input type="text" name="jenis_kerusakan" placeholder="Jenis kerusakan">
+                                <input type="text" name="deskripsi_kerusakan" placeholder="Deskripsi kerusakan">
+                                <input type="number" name="denda_kerusakan" min="0" value="{{ $item->denda_kerusakan ?? 0 }}" placeholder="Denda kerusakan">
+                                <input type="text" name="barang_hilang" placeholder="Barang hilang">
+                                <input type="number" name="biaya_kehilangan" min="0" value="{{ $item->denda_kehilangan ?? 0 }}" placeholder="Denda kehilangan">
                                 <button class="btn btn-primary" type="submit">Kembalikan Mobil</button>
                             </form>
-                            @if($item->denda_keterlambatan > 0 && $item->status_denda !== 'Dibayar')
+                            @if($item->total_denda > 0 && ! in_array($item->status_denda, ['Dibayar', 'Denda Lunas'], true))
                                 <form action="{{ route('admin.transaksi.denda', $item->id) }}" method="POST">
                                     @csrf
                                     @method('PATCH')

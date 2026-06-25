@@ -40,8 +40,8 @@ class AdminController extends Controller
             'kendaraan_service' => $kendaraan->where('status_operasional', 'Service')->count(),
             'total_titik' => $pickupPoints->count(),
             'total_pembayaran_sewa' => $transaksi->where('status_pembayaran', 'Lunas')->sum('total_harga'),
-            'total_denda' => $transaksi->filter(fn ($item) => $item->denda_dibayar_at)->sum('denda_keterlambatan'),
-            'total_pendapatan' => $transaksi->where('status_pembayaran', 'Lunas')->sum('total_harga') + $transaksi->filter(fn ($item) => $item->denda_dibayar_at)->sum('denda_keterlambatan'),
+            'total_denda' => $transaksi->filter(fn ($item) => $item->denda_dibayar_at)->sum(fn ($item) => $item->total_denda),
+            'total_pendapatan' => $transaksi->where('status_pembayaran', 'Lunas')->sum('total_harga') + $transaksi->filter(fn ($item) => $item->denda_dibayar_at)->sum(fn ($item) => $item->total_denda),
             'kendaraan_disewa' => $kendaraan->sum(fn ($item) => max(0, (int) $item->jumlah_unit - (int) $item->unit_tersedia)),
             'kendaraan_tersedia' => $kendaraan->sum('unit_tersedia'),
         ];
@@ -86,18 +86,41 @@ class AdminController extends Controller
                     'tanggal' => $item->denda_dibayar_at->format('d-m-Y'),
                     'pelanggan' => $item->user?->name ?? '-',
                     'kendaraan' => $item->kendaraan?->nama_kendaraan ?? '-',
-                    'jenis' => 'Pembayaran Denda',
+                    'jenis' => 'Denda Keterlambatan',
                     'nominal' => (int) $item->denda_keterlambatan,
+                ]);
+            }
+
+            if ($item->denda_dibayar_at && $item->denda_kerusakan > 0) {
+                $rows->push([
+                    'tanggal' => $item->denda_dibayar_at->format('d-m-Y'),
+                    'pelanggan' => $item->user?->name ?? '-',
+                    'kendaraan' => $item->kendaraan?->nama_kendaraan ?? '-',
+                    'jenis' => 'Denda Kerusakan',
+                    'nominal' => (int) $item->denda_kerusakan,
+                ]);
+            }
+
+            if ($item->denda_dibayar_at && $item->denda_kehilangan > 0) {
+                $rows->push([
+                    'tanggal' => $item->denda_dibayar_at->format('d-m-Y'),
+                    'pelanggan' => $item->user?->name ?? '-',
+                    'kendaraan' => $item->kendaraan?->nama_kendaraan ?? '-',
+                    'jenis' => 'Denda Kehilangan',
+                    'nominal' => (int) $item->denda_kehilangan,
                 ]);
             }
         }
 
         $summary = [
             'total_pembayaran_sewa' => $rows->where('jenis', 'Pembayaran Awal')->sum('nominal'),
-            'total_pembayaran_denda' => $rows->where('jenis', 'Pembayaran Denda')->sum('nominal'),
+            'total_denda_keterlambatan' => $rows->where('jenis', 'Denda Keterlambatan')->sum('nominal'),
+            'total_denda_kerusakan' => $rows->where('jenis', 'Denda Kerusakan')->sum('nominal'),
+            'total_denda_kehilangan' => $rows->where('jenis', 'Denda Kehilangan')->sum('nominal'),
+            'total_pembayaran_denda' => $rows->whereIn('jenis', ['Denda Keterlambatan', 'Denda Kerusakan', 'Denda Kehilangan'])->sum('nominal'),
             'total_pemasukan' => $rows->sum('nominal'),
             'jumlah_transaksi_lunas' => $transaksi->where('status_pembayaran', 'Lunas')->count(),
-            'jumlah_transaksi_denda' => $transaksi->filter(fn ($item) => $item->denda_dibayar_at && $item->denda_keterlambatan > 0)->count(),
+            'jumlah_transaksi_denda' => $transaksi->filter(fn ($item) => $item->denda_dibayar_at && $item->total_denda > 0)->count(),
         ];
 
         return view('admin.laporan-keuangan', compact('rows', 'summary'));
@@ -149,6 +172,21 @@ class AdminController extends Controller
             ->get();
 
         return view('admin.riwayat-kondisi', compact('riwayatKondisi'));
+    }
+
+    public function riwayatKerusakan()
+    {
+        $this->ensureAdmin();
+
+        $riwayatKerusakan = Pengembalian::with(['penyewaan', 'kendaraan', 'user'])
+            ->where(function ($query) {
+                $query->where('denda_kerusakan', '>', 0)
+                    ->orWhere('denda_kehilangan', '>', 0);
+            })
+            ->latest()
+            ->get();
+
+        return view('admin.riwayat-kerusakan', compact('riwayatKerusakan'));
     }
 
     public function updateKendaraan(Request $request, Kendaraan $kendaraan)
@@ -404,6 +442,11 @@ class AdminController extends Controller
             'tanggal_pengembalian' => 'required|date',
             'kondisi_kembali' => 'required|string|max:255',
             'catatan_pengembalian' => 'required|string',
+            'jenis_kerusakan' => 'nullable|string|max:255',
+            'deskripsi_kerusakan' => 'nullable|string',
+            'denda_kerusakan' => 'nullable|integer|min:0',
+            'barang_hilang' => 'nullable|string|max:255',
+            'biaya_kehilangan' => 'nullable|integer|min:0',
         ]);
 
         $tanggalPengembalian = Carbon::parse($data['tanggal_pengembalian']);
@@ -412,16 +455,36 @@ class AdminController extends Controller
             ? $tanggalSelesai->diffInDays($tanggalPengembalian)
             : 0;
         $dendaPerHari = (int) round($transaksi->harga_per_hari * 1.2);
-        $denda = $hariTerlambat * $dendaPerHari;
+        $dendaKeterlambatan = $hariTerlambat * $dendaPerHari;
+        $dendaKerusakan = (int) ($data['denda_kerusakan'] ?? 0);
+        $dendaKehilangan = (int) ($data['biaya_kehilangan'] ?? 0);
+        $detailKerusakan = $dendaKerusakan > 0 || ! empty($data['jenis_kerusakan']) || ! empty($data['deskripsi_kerusakan'])
+            ? [[
+                'jenis' => $data['jenis_kerusakan'] ?? '-',
+                'deskripsi' => $data['deskripsi_kerusakan'] ?? '-',
+                'biaya' => $dendaKerusakan,
+            ]]
+            : null;
+        $detailKehilangan = $dendaKehilangan > 0 || ! empty($data['barang_hilang'])
+            ? [[
+                'barang' => $data['barang_hilang'] ?? '-',
+                'biaya' => $dendaKehilangan,
+            ]]
+            : null;
+        $totalDenda = $dendaKeterlambatan + $dendaKerusakan + $dendaKehilangan;
 
-        $statusDenda = $denda > 0 ? 'Menunggu Pembayaran Denda' : null;
-        $statusSewa = $denda > 0 ? 'Menunggu Pembayaran Denda' : 'Selesai';
+        $statusDenda = $totalDenda > 0 ? 'Menunggu Pembayaran Denda' : null;
+        $statusSewa = $totalDenda > 0 ? 'Menunggu Pembayaran Denda' : 'Selesai';
 
         $transaksi->update([
             'tanggal_pengembalian' => $tanggalPengembalian->toDateString(),
             'kondisi_kembali' => $data['kondisi_kembali'],
             'catatan_pengembalian' => $data['catatan_pengembalian'],
-            'denda_keterlambatan' => $denda,
+            'denda_keterlambatan' => $dendaKeterlambatan,
+            'denda_kerusakan' => $dendaKerusakan,
+            'detail_kerusakan' => $detailKerusakan,
+            'denda_kehilangan' => $dendaKehilangan,
+            'detail_kehilangan' => $detailKehilangan,
             'status_denda' => $statusDenda,
             'status_sewa' => $statusSewa,
         ]);
@@ -437,7 +500,12 @@ class AdminController extends Controller
                 'tanggal_kembali' => $tanggalPengembalian->toDateString(),
                 'kondisi_kembali' => $data['kondisi_kembali'],
                 'catatan_pengembalian' => $data['catatan_pengembalian'],
-                'denda' => $denda,
+                'denda_keterlambatan' => $dendaKeterlambatan,
+                'denda_kerusakan' => $dendaKerusakan,
+                'detail_kerusakan' => $detailKerusakan,
+                'denda_kehilangan' => $dendaKehilangan,
+                'detail_kehilangan' => $detailKehilangan,
+                'denda' => $totalDenda,
             ]
         );
 
@@ -456,23 +524,23 @@ class AdminController extends Controller
             'return'
         );
 
-        if ($hariTerlambat > 0) {
+        if ($totalDenda > 0) {
             $this->notifyUser(
                 $transaksi,
-                'Denda keterlambatan muncul',
-                'Anda terlambat mengembalikan kendaraan ' . $hariTerlambat . ' hari. Denda keterlambatan: Rp ' . number_format($denda, 0, ',', '.') . '.',
+                'Denda pengembalian muncul',
+                'Total denda pengembalian: Rp ' . number_format($totalDenda, 0, ',', '.') . '. Keterlambatan Rp ' . number_format($dendaKeterlambatan, 0, ',', '.') . ', kerusakan Rp ' . number_format($dendaKerusakan, 0, ',', '.') . ', kehilangan Rp ' . number_format($dendaKehilangan, 0, ',', '.') . '.',
                 'fine'
             );
         } else {
             $this->notifyUser(
                 $transaksi,
                 'Mobil berhasil dikembalikan',
-                'Mobil berhasil dikembalikan tanpa denda keterlambatan.',
+                'Mobil berhasil dikembalikan tanpa denda.',
                 'return'
             );
         }
 
-        return redirect()->back()->with('success', 'Mobil berhasil dikembalikan. Status: ' . $statusSewa . '. Denda: Rp ' . number_format($denda, 0, ',', '.') . ' (' . $hariTerlambat . ' hari x Rp ' . number_format($dendaPerHari, 0, ',', '.') . ').');
+        return redirect()->back()->with('success', 'Mobil berhasil dikembalikan. Status: ' . $statusSewa . '. Total denda: Rp ' . number_format($totalDenda, 0, ',', '.') . ' (terlambat Rp ' . number_format($dendaKeterlambatan, 0, ',', '.') . ', kerusakan Rp ' . number_format($dendaKerusakan, 0, ',', '.') . ', kehilangan Rp ' . number_format($dendaKehilangan, 0, ',', '.') . ').');
     }
 
     public function bayarDenda(Penyewaan $transaksi)
@@ -480,7 +548,7 @@ class AdminController extends Controller
         $this->ensureAdmin();
 
         $transaksi->update([
-            'status_denda' => 'Dibayar',
+            'status_denda' => 'Denda Lunas',
             'denda_dibayar_at' => now(),
             'status_sewa' => 'Selesai',
         ]);

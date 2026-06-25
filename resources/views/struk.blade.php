@@ -61,6 +61,10 @@
                 <div class="item">Total<br><strong>Rp {{ number_format($transaksi->total_harga, 0, ',', '.') }}</strong></div>
                 <div class="item">Jumlah Dibayar<br><strong>Rp {{ number_format($transaksi->jumlah_bayar, 0, ',', '.') }}</strong></div>
                 <div class="item">Denda Keterlambatan<br><strong>Rp {{ number_format($transaksi->denda_keterlambatan, 0, ',', '.') }}</strong></div>
+                <div class="item">Denda Kerusakan<br><strong>Rp {{ number_format($transaksi->denda_kerusakan, 0, ',', '.') }}</strong></div>
+                <div class="item">Denda Kehilangan<br><strong>Rp {{ number_format($transaksi->denda_kehilangan, 0, ',', '.') }}</strong></div>
+                <div class="item">Total Denda<br><strong>Rp {{ number_format($transaksi->total_denda, 0, ',', '.') }}</strong></div>
+                <div class="item">Status Denda<br><strong>{{ $transaksi->status_denda ?? '-' }}</strong></div>
             </div>
 
             <div class="line"></div>

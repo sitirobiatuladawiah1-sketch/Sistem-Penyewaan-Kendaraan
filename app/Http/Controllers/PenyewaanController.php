@@ -37,7 +37,7 @@ class PenyewaanController extends Controller
         $unreadNotifications = $notifications->whereNull('read_at')->count();
 
         $totalPengeluaran = $riwayatSewa->sum(function ($item) {
-            return (int) $item->total_harga + (int) $item->denda_keterlambatan;
+            return (int) $item->total_harga + (int) $item->total_denda;
         });
         $tanggalAwal = $riwayatSewa->min('tanggal_mulai');
         $tanggalAkhir = $riwayatSewa->max('tanggal_selesai');
@@ -352,6 +352,9 @@ class PenyewaanController extends Controller
             ['Jumlah Dibayar: Rp ' . number_format($transaksi->jumlah_bayar, 0, ',', '.'), 11, false],
             ['Kurang Bayar: Rp ' . number_format($transaksi->kurang_bayar, 0, ',', '.'), 11, false],
             ['Denda Keterlambatan: Rp ' . number_format($transaksi->denda_keterlambatan, 0, ',', '.'), 11, false],
+            ['Denda Kerusakan: Rp ' . number_format($transaksi->denda_kerusakan, 0, ',', '.'), 11, false],
+            ['Denda Kehilangan: Rp ' . number_format($transaksi->denda_kehilangan, 0, ',', '.'), 11, false],
+            ['Total Denda: Rp ' . number_format($transaksi->total_denda, 0, ',', '.'), 11, true],
             ['', 10, false],
             ['Tunjukkan bukti booking atau QR booking kepada admin saat pengambilan kendaraan.', 10, false],
         ];

@@ -16,8 +16,12 @@
         .table-wrap { overflow-x:auto; }
         table { width:100%; border-collapse:collapse; }
         th,td { text-align:left; padding:12px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
-        input { min-width:160px; }
-        .return-form input { flex:1 1 180px; }
+        input, textarea { min-width:160px; }
+        textarea { border:1px solid #e5e7eb; border-radius:12px; padding:11px 12px; font-family:inherit; resize:vertical; }
+        .return-form input, .return-form textarea { flex:1 1 180px; }
+        .return-form .full-row { flex-basis:100%; }
+        .fine-box { background:#f8fbff; border:1px solid #dbe7ff; border-radius:14px; padding:12px; margin:10px 0; }
+        .fine-box strong { display:block; margin-bottom:8px; color:#143c8f; }
         .alert { padding:12px 14px; border-radius:12px; margin-top:14px; font-weight:700; }
         .success-alert { background:#dcfce7; color:#166534; }
     </style>
@@ -40,7 +44,7 @@
     @endif
 
     <div class="panel">
-        <p>Denda keterlambatan dihitung per hari: harga sewa 1 hari + 20% dari harga sewa 1 hari.</p>
+        <p>Denda keterlambatan dihitung per hari: harga sewa 1 hari + 20% dari harga sewa 1 hari. Jika ada kerusakan atau barang hilang, isi detail dan biaya dendanya saat pengembalian.</p>
         <div class="table-wrap">
             <table>
                 <thead>
@@ -72,6 +76,21 @@
                                     <input type="date" name="tanggal_pengembalian" value="{{ now()->toDateString() }}" required>
                                     <input type="text" name="kondisi_kembali" placeholder="Kondisi saat kembali" required>
                                     <input type="text" name="catatan_pengembalian" placeholder="Catatan pengembalian" required>
+                                    <div class="fine-box full-row">
+                                        <strong>Denda Kerusakan</strong>
+                                        <div class="return-form">
+                                            <input type="text" name="jenis_kerusakan" placeholder="Jenis kerusakan, contoh: Lecet ringan">
+                                            <textarea name="deskripsi_kerusakan" rows="2" placeholder="Deskripsi kerusakan"></textarea>
+                                            <input type="number" name="denda_kerusakan" min="0" value="0" placeholder="Biaya denda kerusakan">
+                                        </div>
+                                    </div>
+                                    <div class="fine-box full-row">
+                                        <strong>Denda Kehilangan</strong>
+                                        <div class="return-form">
+                                            <input type="text" name="barang_hilang" placeholder="Barang hilang, contoh: STNK / kunci">
+                                            <input type="number" name="biaya_kehilangan" min="0" value="0" placeholder="Biaya penggantian">
+                                        </div>
+                                    </div>
                                     <button class="btn btn-primary" type="submit">Kembalikan Mobil</button>
                                 </form>
                             </td>

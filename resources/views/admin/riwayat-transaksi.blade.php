@@ -20,6 +20,8 @@
         .transaction-row span { color:#667085; font-size:13px; }
         .transaction-row strong { text-align:right; overflow-wrap:anywhere; min-width:0; }
         .payment-line { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .fine-detail { display:grid; gap:4px; text-align:right; }
+        .fine-detail small { color:#667085; }
         .badge { display:inline-flex; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700; }
         .success { background:#dcfce7; color:#166534; }
         .warning { background:#fef3c7; color:#92400e; }
@@ -29,6 +31,7 @@
             .transaction-grid { grid-template-columns:1fr; }
             .transaction-row { grid-template-columns:1fr; gap:2px; }
             .transaction-row strong { text-align:left; }
+            .fine-detail { text-align:left; }
         }
     </style>
 </head>
@@ -43,6 +46,7 @@
             <a class="btn btn-soft" href="{{ route('admin.dashboard') }}">Dashboard</a>
             <a class="btn btn-soft" href="{{ route('admin.pengembalian') }}">Pengembalian Mobil</a>
             <a class="btn btn-soft" href="{{ route('admin.riwayat-perbaikan') }}">Riwayat Perbaikan</a>
+            <a class="btn btn-soft" href="{{ route('admin.riwayat-kerusakan') }}">Riwayat Kerusakan</a>
         </div>
     </div>
 
@@ -61,8 +65,36 @@
                     <div class="transaction-row"><span>Total</span><strong>Rp {{ number_format($item->total_harga, 0, ',', '.') }}</strong></div>
                     <div class="transaction-row"><span>Bayar</span><strong>Rp {{ number_format($item->jumlah_bayar, 0, ',', '.') }}</strong></div>
                     <div class="transaction-row"><span>Kurang</span><strong>Rp {{ number_format($item->kurang_bayar, 0, ',', '.') }}</strong></div>
-                    <div class="transaction-row"><span>Denda</span><strong>Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</strong></div>
-                    <div class="transaction-row"><span>Status Denda</span><strong>{{ $item->status_denda ?? ($item->denda_keterlambatan > 0 ? 'Belum dibayar' : '-') }}</strong></div>
+                    <div class="transaction-row">
+                        <span>Denda</span>
+                        <div class="fine-detail">
+                            <small>Keterlambatan: Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</small>
+                            <small>Kerusakan: Rp {{ number_format($item->denda_kerusakan, 0, ',', '.') }}</small>
+                            <small>Kehilangan: Rp {{ number_format($item->denda_kehilangan, 0, ',', '.') }}</small>
+                            <strong>Total: Rp {{ number_format($item->total_denda, 0, ',', '.') }}</strong>
+                        </div>
+                    </div>
+                    <div class="transaction-row"><span>Status Denda</span><strong>{{ $item->status_denda ?? ($item->total_denda > 0 ? 'Belum dibayar' : '-') }}</strong></div>
+                    @if($item->detail_kerusakan)
+                        <div class="transaction-row">
+                            <span>Detail Kerusakan</span>
+                            <strong>
+                                @foreach($item->detail_kerusakan as $detail)
+                                    {{ $detail['jenis'] ?? '-' }} - {{ $detail['deskripsi'] ?? '-' }} (Rp {{ number_format($detail['biaya'] ?? 0, 0, ',', '.') }})<br>
+                                @endforeach
+                            </strong>
+                        </div>
+                    @endif
+                    @if($item->detail_kehilangan)
+                        <div class="transaction-row">
+                            <span>Detail Kehilangan</span>
+                            <strong>
+                                @foreach($item->detail_kehilangan as $detail)
+                                    {{ $detail['barang'] ?? '-' }} (Rp {{ number_format($detail['biaya'] ?? 0, 0, ',', '.') }})<br>
+                                @endforeach
+                            </strong>
+                        </div>
+                    @endif
                     <div class="transaction-row"><span>Kondisi Ambil</span><strong>{{ $item->kondisi_ambil ?? 'Belum diisi' }}</strong></div>
                     <div class="transaction-row"><span>Kondisi Kembali</span><strong>{{ $item->kondisi_kembali ?? 'Belum diisi' }}</strong></div>
                     <div class="payment-line">

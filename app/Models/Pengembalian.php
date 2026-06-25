@@ -18,13 +18,25 @@ class Pengembalian extends Model
         'tanggal_kembali',
         'kondisi_kembali',
         'catatan_pengembalian',
+        'denda_keterlambatan',
+        'denda_kerusakan',
+        'detail_kerusakan',
+        'denda_kehilangan',
+        'detail_kehilangan',
         'denda',
     ];
 
     protected $casts = [
         'tanggal_ambil' => 'date',
         'tanggal_kembali' => 'date',
+        'detail_kerusakan' => 'array',
+        'detail_kehilangan' => 'array',
     ];
+
+    public function getTotalDendaAttribute(): int
+    {
+        return (int) $this->denda_keterlambatan + (int) $this->denda_kerusakan + (int) $this->denda_kehilangan;
+    }
 
     public function penyewaan()
     {
