@@ -29,6 +29,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/riwayat-transaksi', [AdminController::class, 'riwayatTransaksi'])->name('riwayat-transaksi');
         Route::get('/pengembalian', [AdminController::class, 'pengembalian'])->name('pengembalian');
         Route::get('/riwayat-perbaikan', [AdminController::class, 'riwayatPerbaikan'])->name('riwayat-perbaikan');
+        Route::get('/riwayat-kondisi', [AdminController::class, 'riwayatKondisi'])->name('riwayat-kondisi');
+        Route::get('/laporan-keuangan', [AdminController::class, 'laporanKeuangan'])->name('laporan-keuangan');
         Route::post('/kendaraan', [AdminController::class, 'storeKendaraan'])->name('kendaraan.store');
         Route::get('/kendaraan/{kendaraan}/edit', [AdminController::class, 'editKendaraan'])->name('kendaraan.edit');
         Route::put('/kendaraan/{kendaraan}', [AdminController::class, 'updateKendaraan'])->name('kendaraan.update');
@@ -39,7 +41,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/pickup-point/{pickupPoint}', [AdminController::class, 'updatePickupPoint'])->name('pickup-point.update');
         Route::delete('/pickup-point/{pickupPoint}', [AdminController::class, 'destroyPickupPoint'])->name('pickup-point.destroy');
         Route::patch('/transaksi/{transaksi}/status', [AdminController::class, 'updateTransaksiStatus'])->name('transaksi.status');
+        Route::patch('/transaksi/{transaksi}/tanggal-pengembalian', [AdminController::class, 'updateTanggalPengembalian'])->name('transaksi.tanggal-pengembalian');
+        Route::patch('/transaksi/{transaksi}/kondisi-ambil', [AdminController::class, 'updateKondisiAmbil'])->name('transaksi.kondisi-ambil');
         Route::patch('/transaksi/{transaksi}/pengembalian', [AdminController::class, 'returnTransaksi'])->name('transaksi.return');
+        Route::patch('/transaksi/{transaksi}/denda', [AdminController::class, 'bayarDenda'])->name('transaksi.denda');
         Route::post('/kendaraan/{kendaraan}/service', [AdminController::class, 'storeServiceHistory'])->name('kendaraan.service.store');
     });
     
@@ -55,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/pembayaran/identitas', [PenyewaanController::class, 'warningIdentitas'])->name('pembayaran.identitas');
     Route::get('/struk', [PenyewaanController::class, 'struk'])->name('struk');
     Route::get('/struk/download-pdf', [PenyewaanController::class, 'downloadStrukPdf'])->name('struk.pdf');
+    Route::post('/notifikasi/read', [PenyewaanController::class, 'markNotificationsRead'])->name('notifikasi.read');
     
     // Logout
     Route::post('/logout', [AutentikasiController::class, 'logout'])->name('logout');

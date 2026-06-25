@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Penyewaan;
 use App\Models\Kendaraan;
 use App\Models\PickupPoint;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -27,6 +28,14 @@ class PenyewaanController extends Controller
             ->latest()
             ->get();
 
+        $this->ensureUserRentalNotifications($riwayatSewa);
+
+        $notifications = UserNotification::where('user_id', Auth::id())
+            ->latest()
+            ->limit(12)
+            ->get();
+        $unreadNotifications = $notifications->whereNull('read_at')->count();
+
         $totalPengeluaran = $riwayatSewa->sum(function ($item) {
             return (int) $item->total_harga + (int) $item->denda_keterlambatan;
         });
@@ -40,7 +49,9 @@ class PenyewaanController extends Controller
             'totalPengeluaran',
             'tanggalAwal',
             'tanggalAkhir',
-            'punyaRiwayat'
+            'punyaRiwayat',
+            'notifications',
+            'unreadNotifications'
         ));
     }
 
@@ -229,6 +240,15 @@ class PenyewaanController extends Controller
         ]);
     }
 
+    public function markNotificationsRead()
+    {
+        UserNotification::where('user_id', Auth::id())
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return redirect()->back()->with('success', 'Notifikasi ditandai sudah dibaca.');
+    }
+
     private function getTransaksiAktif(): Penyewaan
     {
         $transaksiId = session('transaksi_aktif_id');
@@ -256,6 +276,56 @@ class PenyewaanController extends Controller
         } while (Penyewaan::where('booking_code', $code)->exists());
 
         return $code;
+    }
+
+    private function ensureUserRentalNotifications($riwayatSewa): void
+    {
+        foreach ($riwayatSewa as $transaksi) {
+            if (! in_array($transaksi->status_sewa, ['Pending', 'Menunggu Pembayaran Denda'], true)) {
+                continue;
+            }
+
+            $tanggalPengembalian = Carbon::parse($transaksi->tanggal_selesai)->startOfDay();
+            $today = now()->startOfDay();
+
+            if ($today->diffInDays($tanggalPengembalian, false) <= 1 && $today->lessThanOrEqualTo($tanggalPengembalian)) {
+                $this->createUserNotificationOnce(
+                    $transaksi,
+                    'return_reminder',
+                    'Pengingat tanggal pengembalian',
+                    'Kendaraan ' . ($transaksi->kendaraan?->nama_kendaraan ?? '-') . ' harus dikembalikan pada ' . $tanggalPengembalian->format('d-m-Y') . '.'
+                );
+            }
+
+            if ($today->greaterThan($tanggalPengembalian) && ! $transaksi->tanggal_pengembalian) {
+                $this->createUserNotificationOnce(
+                    $transaksi,
+                    'overdue',
+                    'Kendaraan terlambat dikembalikan',
+                    'Anda terlambat mengembalikan kendaraan. Segera hubungi admin untuk proses pengembalian dan perhitungan denda.'
+                );
+            }
+        }
+    }
+
+    private function createUserNotificationOnce(Penyewaan $transaksi, string $type, string $title, string $message): void
+    {
+        $exists = UserNotification::where('user_id', $transaksi->user_id)
+            ->where('penyewaan_id', $transaksi->id)
+            ->where('type', $type)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        UserNotification::create([
+            'user_id' => $transaksi->user_id,
+            'penyewaan_id' => $transaksi->id,
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+        ]);
     }
 
     private function buildBookingPdf(Penyewaan $transaksi): string

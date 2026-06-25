@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kendaraan;
+use App\Models\Pengembalian;
 use App\Models\PickupPoint;
 use App\Models\Penyewaan;
 use App\Models\ServiceHistory;
 use App\Models\User;
+use App\Models\UserNotification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,9 +39,68 @@ class AdminController extends Controller
             'total_kendaraan' => $kendaraan->count(),
             'kendaraan_service' => $kendaraan->where('status_operasional', 'Service')->count(),
             'total_titik' => $pickupPoints->count(),
+            'total_pembayaran_sewa' => $transaksi->where('status_pembayaran', 'Lunas')->sum('total_harga'),
+            'total_denda' => $transaksi->filter(fn ($item) => $item->denda_dibayar_at)->sum('denda_keterlambatan'),
+            'total_pendapatan' => $transaksi->where('status_pembayaran', 'Lunas')->sum('total_harga') + $transaksi->filter(fn ($item) => $item->denda_dibayar_at)->sum('denda_keterlambatan'),
+            'kendaraan_disewa' => $kendaraan->sum(fn ($item) => max(0, (int) $item->jumlah_unit - (int) $item->unit_tersedia)),
+            'kendaraan_tersedia' => $kendaraan->sum('unit_tersedia'),
         ];
 
         return view('admin.dashboard', compact('users', 'transaksi', 'kendaraan', 'pickupPoints', 'statistik', 'serviceHistories'));
+    }
+
+    public function laporanKeuangan(Request $request)
+    {
+        $this->ensureAdmin();
+
+        $query = Penyewaan::with(['user', 'kendaraan']);
+
+        if ($request->filled('tanggal')) {
+            $query->whereDate('created_at', $request->tanggal);
+        }
+
+        if ($request->filled('bulan')) {
+            $query->whereMonth('created_at', $request->bulan);
+        }
+
+        if ($request->filled('tahun')) {
+            $query->whereYear('created_at', $request->tahun);
+        }
+
+        $transaksi = $query->latest()->get();
+        $rows = collect();
+
+        foreach ($transaksi as $item) {
+            if ($item->status_pembayaran === 'Lunas') {
+                $rows->push([
+                    'tanggal' => ($item->paid_at ?? $item->created_at)->format('d-m-Y'),
+                    'pelanggan' => $item->user?->name ?? '-',
+                    'kendaraan' => $item->kendaraan?->nama_kendaraan ?? '-',
+                    'jenis' => 'Pembayaran Awal',
+                    'nominal' => (int) $item->total_harga,
+                ]);
+            }
+
+            if ($item->denda_dibayar_at && $item->denda_keterlambatan > 0) {
+                $rows->push([
+                    'tanggal' => $item->denda_dibayar_at->format('d-m-Y'),
+                    'pelanggan' => $item->user?->name ?? '-',
+                    'kendaraan' => $item->kendaraan?->nama_kendaraan ?? '-',
+                    'jenis' => 'Pembayaran Denda',
+                    'nominal' => (int) $item->denda_keterlambatan,
+                ]);
+            }
+        }
+
+        $summary = [
+            'total_pembayaran_sewa' => $rows->where('jenis', 'Pembayaran Awal')->sum('nominal'),
+            'total_pembayaran_denda' => $rows->where('jenis', 'Pembayaran Denda')->sum('nominal'),
+            'total_pemasukan' => $rows->sum('nominal'),
+            'jumlah_transaksi_lunas' => $transaksi->where('status_pembayaran', 'Lunas')->count(),
+            'jumlah_transaksi_denda' => $transaksi->filter(fn ($item) => $item->denda_dibayar_at && $item->denda_keterlambatan > 0)->count(),
+        ];
+
+        return view('admin.laporan-keuangan', compact('rows', 'summary'));
     }
 
     public function editKendaraan(Kendaraan $kendaraan)
@@ -77,6 +138,17 @@ class AdminController extends Controller
         $serviceHistories = ServiceHistory::with('kendaraan')->latest('tanggal_service')->latest()->get();
 
         return view('admin.riwayat-perbaikan', compact('serviceHistories'));
+    }
+
+    public function riwayatKondisi()
+    {
+        $this->ensureAdmin();
+
+        $riwayatKondisi = Pengembalian::with(['penyewaan', 'kendaraan', 'user'])
+            ->latest()
+            ->get();
+
+        return view('admin.riwayat-kondisi', compact('riwayatKondisi'));
     }
 
     public function updateKendaraan(Request $request, Kendaraan $kendaraan)
@@ -230,7 +302,7 @@ class AdminController extends Controller
         $this->ensureAdmin();
 
         $data = $request->validate([
-            'status_sewa' => 'nullable|in:Pending,Selesai,Dikembalikan,Expired',
+            'status_sewa' => 'nullable|in:Pending,Selesai,Dikembalikan,Expired,Menunggu Pembayaran Denda',
             'status_pembayaran' => 'nullable|in:Menunggu Konfirmasi,Lunas,Kurang Bayar,Ditolak',
         ]);
 
@@ -248,6 +320,15 @@ class AdminController extends Controller
 
         $transaksi->update($updateData);
 
+        if (($updateData['status_pembayaran'] ?? null) === 'Lunas') {
+            $this->notifyUser(
+                $transaksi,
+                'Pembayaran berhasil diverifikasi admin',
+                'Pembayaran sewa kendaraan sudah lunas dan berhasil diverifikasi admin.',
+                'payment'
+            );
+        }
+
         $kendaraan = $transaksi->kendaraan;
         if ($kendaraan && isset($updateData['status_sewa']) && in_array($updateData['status_sewa'], ['Selesai', 'Dikembalikan', 'Expired'], true)) {
             $unitTersedia = in_array($statusSebelumnya, ['Pending'], true)
@@ -263,12 +344,66 @@ class AdminController extends Controller
         return redirect()->route('admin.dashboard')->with('success', 'Status transaksi berhasil diperbarui.');
     }
 
-    public function returnTransaksi(Request $request, Penyewaan $transaksi)
+    public function updateKondisiAmbil(Request $request, Penyewaan $transaksi)
     {
         $this->ensureAdmin();
 
         $data = $request->validate([
+            'kondisi_ambil' => 'required|string|max:255',
+            'catatan_kondisi_ambil' => 'required|string',
+        ]);
+
+        $transaksi->update($data);
+
+        Pengembalian::updateOrCreate(
+            ['penyewaan_id' => $transaksi->id],
+            [
+                'kendaraan_id' => $transaksi->kendaraan_id,
+                'user_id' => $transaksi->user_id,
+                'tanggal_ambil' => $transaksi->tanggal_mulai,
+                'kondisi_ambil' => $data['kondisi_ambil'],
+                'catatan_kondisi_ambil' => $data['catatan_kondisi_ambil'],
+            ]
+        );
+
+        return redirect()->back()->with('success', 'Kondisi mobil saat pengambilan berhasil disimpan.');
+    }
+
+    public function updateTanggalPengembalian(Request $request, Penyewaan $transaksi)
+    {
+        $this->ensureAdmin();
+
+        $data = $request->validate([
+            'tanggal_selesai' => 'required|date|after_or_equal:' . Carbon::parse($transaksi->tanggal_mulai)->toDateString(),
+        ]);
+
+        $tanggalPengembalian = Carbon::parse($data['tanggal_selesai']);
+        $transaksi->update([
+            'tanggal_selesai' => $tanggalPengembalian->toDateString(),
+        ]);
+
+        $this->notifyUser(
+            $transaksi,
+            'Tanggal pengembalian kendaraan ditetapkan',
+            'Tanggal pengembalian kendaraan telah ditetapkan pada ' . $tanggalPengembalian->format('d-m-Y') . '.',
+            'return_schedule'
+        );
+
+        return redirect()->back()->with('success', 'Tanggal pengembalian kendaraan berhasil diperbarui.');
+    }
+
+    public function returnTransaksi(Request $request, Penyewaan $transaksi)
+    {
+        $this->ensureAdmin();
+
+        if (! $transaksi->kondisi_ambil || ! $transaksi->catatan_kondisi_ambil) {
+            return redirect()->back()->with('error', 'Isi kondisi mobil saat pengambilan terlebih dahulu sebelum mengembalikan mobil.');
+        }
+
+        $data = $request->validate([
             'tanggal_pengembalian' => 'required|date',
+            'kondisi_kembali' => 'required|string|max:255',
+            'catatan_pengembalian' => 'required|string',
         ]);
 
         $tanggalPengembalian = Carbon::parse($data['tanggal_pengembalian']);
@@ -279,11 +414,32 @@ class AdminController extends Controller
         $dendaPerHari = (int) round($transaksi->harga_per_hari * 1.2);
         $denda = $hariTerlambat * $dendaPerHari;
 
+        $statusDenda = $denda > 0 ? 'Menunggu Pembayaran Denda' : null;
+        $statusSewa = $denda > 0 ? 'Menunggu Pembayaran Denda' : 'Selesai';
+
         $transaksi->update([
             'tanggal_pengembalian' => $tanggalPengembalian->toDateString(),
+            'kondisi_kembali' => $data['kondisi_kembali'],
+            'catatan_pengembalian' => $data['catatan_pengembalian'],
             'denda_keterlambatan' => $denda,
-            'status_sewa' => 'Selesai',
+            'status_denda' => $statusDenda,
+            'status_sewa' => $statusSewa,
         ]);
+
+        Pengembalian::updateOrCreate(
+            ['penyewaan_id' => $transaksi->id],
+            [
+                'kendaraan_id' => $transaksi->kendaraan_id,
+                'user_id' => $transaksi->user_id,
+                'tanggal_ambil' => $transaksi->tanggal_mulai,
+                'kondisi_ambil' => $transaksi->kondisi_ambil,
+                'catatan_kondisi_ambil' => $transaksi->catatan_kondisi_ambil,
+                'tanggal_kembali' => $tanggalPengembalian->toDateString(),
+                'kondisi_kembali' => $data['kondisi_kembali'],
+                'catatan_pengembalian' => $data['catatan_pengembalian'],
+                'denda' => $denda,
+            ]
+        );
 
         if ($transaksi->kendaraan) {
             $unitTersedia = min($transaksi->kendaraan->jumlah_unit, $transaksi->kendaraan->unit_tersedia + 1);
@@ -293,7 +449,50 @@ class AdminController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Mobil berhasil dikembalikan. Status menjadi Selesai. Denda: Rp ' . number_format($denda, 0, ',', '.') . ' (' . $hariTerlambat . ' hari x Rp ' . number_format($dendaPerHari, 0, ',', '.') . ').');
+        $this->notifyUser(
+            $transaksi,
+            'Tanggal pengembalian kendaraan ditetapkan',
+            'Tanggal pengembalian kendaraan telah ditetapkan pada ' . $tanggalPengembalian->format('d-m-Y') . '.',
+            'return'
+        );
+
+        if ($hariTerlambat > 0) {
+            $this->notifyUser(
+                $transaksi,
+                'Denda keterlambatan muncul',
+                'Anda terlambat mengembalikan kendaraan ' . $hariTerlambat . ' hari. Denda keterlambatan: Rp ' . number_format($denda, 0, ',', '.') . '.',
+                'fine'
+            );
+        } else {
+            $this->notifyUser(
+                $transaksi,
+                'Mobil berhasil dikembalikan',
+                'Mobil berhasil dikembalikan tanpa denda keterlambatan.',
+                'return'
+            );
+        }
+
+        return redirect()->back()->with('success', 'Mobil berhasil dikembalikan. Status: ' . $statusSewa . '. Denda: Rp ' . number_format($denda, 0, ',', '.') . ' (' . $hariTerlambat . ' hari x Rp ' . number_format($dendaPerHari, 0, ',', '.') . ').');
+    }
+
+    public function bayarDenda(Penyewaan $transaksi)
+    {
+        $this->ensureAdmin();
+
+        $transaksi->update([
+            'status_denda' => 'Dibayar',
+            'denda_dibayar_at' => now(),
+            'status_sewa' => 'Selesai',
+        ]);
+
+        $this->notifyUser(
+            $transaksi,
+            'Pembayaran denda berhasil diterima',
+            'Pembayaran denda berhasil diterima.',
+            'fine_paid'
+        );
+
+        return redirect()->back()->with('success', 'Pembayaran denda berhasil diterima.');
     }
 
     public function storeServiceHistory(Request $request, Kendaraan $kendaraan)
@@ -314,5 +513,16 @@ class AdminController extends Controller
         $kendaraan->serviceHistories()->create($data);
 
         return redirect()->route('admin.dashboard')->with('success', 'Riwayat service berhasil ditambahkan.');
+    }
+
+    private function notifyUser(Penyewaan $transaksi, string $title, string $message, string $type = 'info'): void
+    {
+        UserNotification::create([
+            'user_id' => $transaksi->user_id,
+            'penyewaan_id' => $transaksi->id,
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+        ]);
     }
 }

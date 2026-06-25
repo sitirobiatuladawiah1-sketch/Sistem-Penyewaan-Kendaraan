@@ -62,6 +62,9 @@
                     <div class="transaction-row"><span>Bayar</span><strong>Rp {{ number_format($item->jumlah_bayar, 0, ',', '.') }}</strong></div>
                     <div class="transaction-row"><span>Kurang</span><strong>Rp {{ number_format($item->kurang_bayar, 0, ',', '.') }}</strong></div>
                     <div class="transaction-row"><span>Denda</span><strong>Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</strong></div>
+                    <div class="transaction-row"><span>Status Denda</span><strong>{{ $item->status_denda ?? ($item->denda_keterlambatan > 0 ? 'Belum dibayar' : '-') }}</strong></div>
+                    <div class="transaction-row"><span>Kondisi Ambil</span><strong>{{ $item->kondisi_ambil ?? 'Belum diisi' }}</strong></div>
+                    <div class="transaction-row"><span>Kondisi Kembali</span><strong>{{ $item->kondisi_kembali ?? 'Belum diisi' }}</strong></div>
                     <div class="payment-line">
                         <span class="badge {{ $item->status_sewa === 'Selesai' ? 'success' : 'warning' }}">{{ $item->status_sewa }}</span>
                         <span class="badge {{ ($item->status_pembayaran ?? '') === 'Lunas' ? 'success' : (($item->kurang_bayar > 0 || ($item->status_pembayaran ?? '') === 'Kurang Bayar') ? 'danger' : 'warning') }}">{{ $item->status_pembayaran ?? 'Menunggu Konfirmasi' }}</span>

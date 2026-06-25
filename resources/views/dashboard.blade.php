@@ -95,11 +95,84 @@
             gap:12px;
             align-items:center;
         }
+        .header-actions {
+            display:flex;
+            gap:12px;
+            align-items:center;
+            flex-wrap:wrap;
+            justify-content:flex-end;
+        }
+        .notification-wrap {
+            position:relative;
+        }
+        .notification-toggle {
+            width:44px;
+            height:44px;
+            border-radius:999px;
+            border:1px solid rgba(255,255,255,0.35);
+            background:rgba(255,255,255,0.15);
+            color:#fff;
+            cursor:pointer;
+            display:grid;
+            place-items:center;
+            font-weight:900;
+            list-style:none;
+        }
+        .notification-toggle::-webkit-details-marker { display:none; }
+        .notification-count {
+            position:absolute;
+            top:-5px;
+            right:-5px;
+            min-width:20px;
+            height:20px;
+            border-radius:999px;
+            background:#dc2626;
+            color:#fff;
+            font-size:11px;
+            display:grid;
+            place-items:center;
+            border:2px solid #fff;
+        }
+        .notification-menu {
+            position:absolute;
+            right:0;
+            top:52px;
+            width:min(360px, calc(100vw - 36px));
+            background:#fff;
+            color:var(--text);
+            border:1px solid var(--border);
+            border-radius:16px;
+            box-shadow:0 18px 50px rgba(15,23,42,0.16);
+            padding:12px;
+            z-index:20;
+        }
+        .notification-menu h4 { margin:0 0 10px; }
+        .notification-item {
+            padding:10px;
+            border:1px solid #eef2f7;
+            border-radius:12px;
+            margin-bottom:8px;
+            background:#f9fbff;
+        }
+        .notification-item strong { display:block; margin-bottom:4px; }
+        .notification-item small { color:var(--muted); }
+        .notification-read-form { margin:0 0 10px; }
+        .notification-read-form button {
+            width:100%;
+            border:0;
+            border-radius:10px;
+            padding:10px 12px;
+            background:#eef5ff;
+            color:#143c8f;
+            font-weight:700;
+            cursor:pointer;
+        }
         @media (max-width: 900px) {
             .main-container { padding: 18px; }
             .summary-row, .car-grid { grid-template-columns: 1fr; }
             .header, .history-item, .card-sm { flex-direction: column; align-items: flex-start; }
             .header form, .btn-exit, .btn-lihat, .btn-sewa { width: 100%; }
+            .header-actions { width:100%; justify-content:space-between; }
             .section-title { flex-direction: column; align-items: flex-start; }
             .card-sm { gap: 12px; }
             .icon-box { align-self: flex-end; }
@@ -124,10 +197,39 @@
             <h2 style="margin:0; text-transform: capitalize;">{{ $authUser->name }}</h2>
             <p style="margin:5px 0 0 0; opacity:0.8;">{{ $punyaRiwayat ? 'Selamat Datang Kembali!' : 'Selamat Datang!' }}</p>
         </div>
-        <form action="{{ route('logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn-exit">Exit</button>
-        </form>
+        <div class="header-actions">
+            <details class="notification-wrap">
+                <summary class="notification-toggle" title="Notifikasi">&#128276;</summary>
+                @if($unreadNotifications > 0)
+                    <span class="notification-count">{{ $unreadNotifications }}</span>
+                @endif
+                <div class="notification-menu">
+                    <h4>Notifikasi</h4>
+                    @if($unreadNotifications > 0)
+                        <form action="{{ route('notifikasi.read') }}" method="POST" class="notification-read-form">
+                            @csrf
+                            <button type="submit">Tandai Semua Dibaca</button>
+                        </form>
+                    @endif
+                    @forelse($notifications as $notification)
+                        <div class="notification-item">
+                            <strong>{{ $notification->title }}</strong>
+                            <div>{{ $notification->message }}</div>
+                            <small>{{ $notification->created_at->format('d-m-Y H:i') }}</small>
+                        </div>
+                    @empty
+                        <div class="notification-item">
+                            <strong>Belum ada notifikasi.</strong>
+                            <small>Notifikasi pembayaran, pengembalian, dan denda akan muncul di sini.</small>
+                        </div>
+                    @endforelse
+                </div>
+            </details>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn-exit">Exit</button>
+            </form>
+        </div>
     </div>
 
     <div class="summary-row">
@@ -173,7 +275,7 @@
             <div class="car-card">
                 <div class="car-media">
                     @if($mobil->image_url)
-                        <img src="{{ $mobil->image_url }}" alt="{{ $mobil->nama_kendaraan }}">
+                        <img src="{{ $mobil->image_url }}" alt="{{ $mobil->nama_kendaraan }}" onerror="this.parentElement.classList.add('image-failed'); this.remove();">
                     @else
                         CAR
                     @endif

@@ -14,6 +14,8 @@ class Penyewaan extends Model
         'tanggal_mulai', 
         'tanggal_selesai', 
         'lokasi_pengambilan', 
+        'kondisi_ambil',
+        'catatan_kondisi_ambil',
         'metode_pembayaran', 
         'nik_pelanggan',
         'foto_ktp_path',
@@ -24,7 +26,11 @@ class Penyewaan extends Model
         'status_pembayaran',
         'kurang_bayar',
         'denda_keterlambatan',
+        'status_denda',
+        'denda_dibayar_at',
         'tanggal_pengembalian',
+        'kondisi_kembali',
+        'catatan_pengembalian',
         'status_sewa',
         'booking_code',
         'booking_expires_at',
@@ -37,6 +43,7 @@ class Penyewaan extends Model
         'tanggal_pengembalian' => 'date',
         'booking_expires_at' => 'datetime',
         'paid_at' => 'datetime',
+        'denda_dibayar_at' => 'datetime',
     ];
 
     public function kendaraan()
@@ -47,6 +54,16 @@ class Penyewaan extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(UserNotification::class, 'penyewaan_id');
+    }
+
+    public function pengembalianRecords()
+    {
+        return $this->hasMany(Pengembalian::class, 'penyewaan_id');
     }
 
     public function getQrPayloadAttribute(): string

@@ -259,7 +259,8 @@
             margin: 0;
         }
         .card-form-row select,
-        .card-form-row input {
+        .card-form-row input,
+        .card-form-row textarea {
             width: 100%;
         }
         .mobile-only-break { display: none; }
@@ -307,6 +308,8 @@
                 <a class="btn btn-light" href="{{ route('admin.pengembalian') }}">Pengembalian Mobil</a>
                 <a class="btn btn-light" href="{{ route('admin.riwayat-transaksi') }}">Riwayat Transaksi</a>
                 <a class="btn btn-light" href="{{ route('admin.riwayat-perbaikan') }}">Riwayat Perbaikan</a>
+                <a class="btn btn-light" href="{{ route('admin.riwayat-kondisi') }}">Riwayat Kondisi</a>
+                <a class="btn btn-light" href="{{ route('admin.laporan-keuangan') }}">Laporan Keuangan</a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button class="btn btn-danger" type="submit">Logout</button>
@@ -342,6 +345,26 @@
             <div class="stat">
                 <small>Titik Pengambilan</small>
                 <strong>{{ $statistik['total_titik'] }}</strong>
+            </div>
+            <div class="stat">
+                <small>Total Pembayaran Sewa</small>
+                <strong>Rp {{ number_format($statistik['total_pembayaran_sewa'], 0, ',', '.') }}</strong>
+            </div>
+            <div class="stat">
+                <small>Total Denda</small>
+                <strong>Rp {{ number_format($statistik['total_denda'], 0, ',', '.') }}</strong>
+            </div>
+            <div class="stat">
+                <small>Total Pendapatan</small>
+                <strong>Rp {{ number_format($statistik['total_pendapatan'], 0, ',', '.') }}</strong>
+            </div>
+            <div class="stat">
+                <small>Kendaraan Sedang Disewa</small>
+                <strong>{{ $statistik['kendaraan_disewa'] }}</strong>
+            </div>
+            <div class="stat">
+                <small>Kendaraan Tersedia</small>
+                <strong>{{ $statistik['kendaraan_tersedia'] }}</strong>
             </div>
         </div>
 
@@ -596,6 +619,8 @@
                             <div class="info-row"><span>Bayar</span><strong>Rp {{ number_format($item->jumlah_bayar, 0, ',', '.') }}</strong></div>
                             <div class="info-row"><span>Kurang</span><strong>Rp {{ number_format($item->kurang_bayar, 0, ',', '.') }}</strong></div>
                             <div class="info-row"><span>Denda</span><strong>Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</strong></div>
+                            <div class="info-row"><span>Kondisi Ambil</span><strong>{{ $item->kondisi_ambil ?? 'Belum diisi' }}</strong></div>
+                            <div class="info-row"><span>Kondisi Kembali</span><strong>{{ $item->kondisi_kembali ?? 'Belum diisi' }}</strong></div>
                             <div class="info-row"><span>Metode</span><strong>{{ $item->metode_pembayaran }}</strong></div>
                             <div class="status-line">
                                 <span class="badge {{ $item->status_sewa === 'Selesai' ? 'success' : 'warning' }}">{{ $item->status_sewa }}</span>
@@ -610,6 +635,12 @@
                         </div>
 
                         <div class="card-form-row">
+                            <form action="{{ route('admin.transaksi.tanggal-pengembalian', $item->id) }}" method="POST" class="mini-form">
+                                @csrf
+                                @method('PATCH')
+                                <input type="date" name="tanggal_selesai" value="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}" required>
+                                <button class="btn btn-soft" type="submit">Simpan Tanggal Pengembalian</button>
+                            </form>
                             <form action="{{ route('admin.transaksi.status', $item->id) }}" method="POST">
                                 @csrf
                                 @method('PATCH')
@@ -630,14 +661,31 @@
                                     <option value="Selesai" @selected($item->status_sewa === 'Selesai')>Selesai</option>
                                     <option value="Dikembalikan" @selected($item->status_sewa === 'Dikembalikan')>Dikembalikan</option>
                                     <option value="Expired" @selected($item->status_sewa === 'Expired')>Expired</option>
+                                    <option value="Menunggu Pembayaran Denda" @selected($item->status_sewa === 'Menunggu Pembayaran Denda')>Menunggu Pembayaran Denda</option>
                                 </select>
+                            </form>
+                            <form action="{{ route('admin.transaksi.kondisi-ambil', $item->id) }}" method="POST" class="mini-form">
+                                @csrf
+                                @method('PATCH')
+                                <input type="text" name="kondisi_ambil" value="{{ $item->kondisi_ambil }}" placeholder="Kondisi saat ambil" required>
+                                <input type="text" name="catatan_kondisi_ambil" value="{{ $item->catatan_kondisi_ambil }}" placeholder="Catatan kondisi ambil" required>
+                                <button class="btn btn-soft" type="submit">Simpan Kondisi Ambil</button>
                             </form>
                             <form action="{{ route('admin.transaksi.return', $item->id) }}" method="POST" class="mini-form">
                                 @csrf
                                 @method('PATCH')
                                 <input type="date" name="tanggal_pengembalian" value="{{ now()->toDateString() }}" required>
+                                <input type="text" name="kondisi_kembali" value="{{ $item->kondisi_kembali }}" placeholder="Kondisi saat kembali" required>
+                                <input type="text" name="catatan_pengembalian" value="{{ $item->catatan_pengembalian }}" placeholder="Catatan pengembalian" required>
                                 <button class="btn btn-primary" type="submit">Kembalikan Mobil</button>
                             </form>
+                            @if($item->denda_keterlambatan > 0 && $item->status_denda !== 'Dibayar')
+                                <form action="{{ route('admin.transaksi.denda', $item->id) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="btn btn-soft" type="submit">Tandai Denda Dibayar</button>
+                                </form>
+                            @endif
                         </div>
                     </article>
                 @empty
