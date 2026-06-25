@@ -313,8 +313,8 @@
                     <div>
                         <strong>{{ $riwayat->kendaraan?->nama_kendaraan ?? 'Kendaraan tidak ditemukan' }}</strong><br>
                         <small class="muted">{{ $riwayat->booking_code }} - {{ $riwayat->tanggal_mulai }} s/d {{ $riwayat->tanggal_selesai }} - {{ $riwayat->metode_pembayaran }}</small>
-                        @if($riwayat->denda_keterlambatan > 0)
-                            <br><small class="muted">Denda: Rp {{ number_format($riwayat->denda_keterlambatan, 0, ',', '.') }}</small>
+                        @if($riwayat->total_denda > 0)
+                            <br><small class="muted">Denda: Rp {{ number_format($riwayat->total_denda, 0, ',', '.') }} - {{ $riwayat->status_denda ?? 'Belum dibayar' }}</small>
                         @endif
                     </div>
                     <div style="text-align:right;">

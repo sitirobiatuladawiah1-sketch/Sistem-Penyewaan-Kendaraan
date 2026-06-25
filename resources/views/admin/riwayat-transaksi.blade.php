@@ -26,6 +26,9 @@
         .success { background:#dcfce7; color:#166534; }
         .warning { background:#fef3c7; color:#92400e; }
         .danger { background:#fee2e2; color:#991b1b; }
+        .fine-action { margin-top:auto; padding-top:12px; border-top:1px solid #eef2f7; }
+        .fine-action form { margin:0; }
+        .fine-action .btn { width:100%; justify-content:center; }
         @media (max-width: 640px) {
             .wrap { padding:14px; }
             .transaction-grid { grid-template-columns:1fr; }
@@ -101,6 +104,15 @@
                         <span class="badge {{ $item->status_sewa === 'Selesai' ? 'success' : 'warning' }}">{{ $item->status_sewa }}</span>
                         <span class="badge {{ ($item->status_pembayaran ?? '') === 'Lunas' ? 'success' : (($item->kurang_bayar > 0 || ($item->status_pembayaran ?? '') === 'Kurang Bayar') ? 'danger' : 'warning') }}">{{ $item->status_pembayaran ?? 'Menunggu Konfirmasi' }}</span>
                     </div>
+                    @if($item->total_denda > 0 && ! in_array($item->status_denda, ['Dibayar', 'Denda Lunas'], true))
+                        <div class="fine-action">
+                            <form action="{{ route('admin.transaksi.denda', $item->id) }}" method="POST" onsubmit="return confirm('Konfirmasi denda user sudah dibayar?');">
+                                @csrf
+                                @method('PATCH')
+                                <button class="btn btn-primary" type="submit">Konfirmasi Denda Sudah Dibayar</button>
+                            </form>
+                        </div>
+                    @endif
                 </article>
             @empty
                 <div class="transaction-card">Belum ada transaksi.</div>

@@ -24,6 +24,9 @@
         .fine-box strong { display:block; margin-bottom:8px; color:#143c8f; }
         .alert { padding:12px 14px; border-radius:12px; margin-top:14px; font-weight:700; }
         .success-alert { background:#dcfce7; color:#166534; }
+        .error-alert { background:#fee2e2; color:#991b1b; }
+        .fine-summary { display:grid; gap:4px; margin-bottom:10px; color:#374151; }
+        .fine-summary small { color:#6b7280; }
     </style>
 </head>
 <body>
@@ -43,8 +46,12 @@
         <div class="alert success-alert">{{ session('success') }}</div>
     @endif
 
+    @if(session('error'))
+        <div class="alert error-alert">{{ session('error') }}</div>
+    @endif
+
     <div class="panel">
-        <p>Denda keterlambatan dihitung per hari: harga sewa 1 hari + 20% dari harga sewa 1 hari. Jika ada kerusakan atau barang hilang, isi detail dan biaya dendanya saat pengembalian.</p>
+        <p>Denda keterlambatan dihitung per hari: harga sewa 1 hari + 20% dari harga sewa 1 hari. Jika user sudah bayar denda, klik tombol konfirmasi supaya status sewa selesai dan user menerima notifikasi.</p>
         <div class="table-wrap">
             <table>
                 <thead>
@@ -64,39 +71,54 @@
                             <td>{{ $item->tanggal_mulai }} s/d {{ $item->tanggal_selesai }}</td>
                             <td>Rp {{ number_format($item->harga_per_hari, 0, ',', '.') }}</td>
                             <td>
-                                <form action="{{ route('admin.transaksi.tanggal-pengembalian', $item->id) }}" method="POST" class="schedule-form">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="date" name="tanggal_selesai" value="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}" required>
-                                    <button class="btn btn-soft" type="submit">Simpan Tanggal Pengembalian</button>
-                                </form>
-                                <form action="{{ route('admin.transaksi.return', $item->id) }}" method="POST" class="return-form">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="date" name="tanggal_pengembalian" value="{{ now()->toDateString() }}" required>
-                                    <input type="text" name="kondisi_kembali" placeholder="Kondisi saat kembali" required>
-                                    <input type="text" name="catatan_pengembalian" placeholder="Catatan pengembalian" required>
-                                    <div class="fine-box full-row">
-                                        <strong>Denda Kerusakan</strong>
-                                        <div class="return-form">
-                                            <input type="text" name="jenis_kerusakan" placeholder="Jenis kerusakan, contoh: Lecet ringan">
-                                            <textarea name="deskripsi_kerusakan" rows="2" placeholder="Deskripsi kerusakan"></textarea>
-                                            <input type="number" name="denda_kerusakan" min="0" value="0" placeholder="Biaya denda kerusakan">
-                                        </div>
+                                @if($item->status_sewa === 'Menunggu Pembayaran Denda' && $item->total_denda > 0)
+                                    <div class="fine-summary">
+                                        <strong>Total denda: Rp {{ number_format($item->total_denda, 0, ',', '.') }}</strong>
+                                        <small>Keterlambatan: Rp {{ number_format($item->denda_keterlambatan, 0, ',', '.') }}</small>
+                                        <small>Kerusakan: Rp {{ number_format($item->denda_kerusakan, 0, ',', '.') }}</small>
+                                        <small>Kehilangan: Rp {{ number_format($item->denda_kehilangan, 0, ',', '.') }}</small>
+                                        <small>Status: {{ $item->status_denda ?? 'Menunggu pembayaran denda' }}</small>
                                     </div>
-                                    <div class="fine-box full-row">
-                                        <strong>Denda Kehilangan</strong>
-                                        <div class="return-form">
-                                            <input type="text" name="barang_hilang" placeholder="Barang hilang, contoh: STNK / kunci">
-                                            <input type="number" name="biaya_kehilangan" min="0" value="0" placeholder="Biaya penggantian">
+                                    <form action="{{ route('admin.transaksi.denda', $item->id) }}" method="POST" onsubmit="return confirm('Konfirmasi denda user sudah dibayar?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="btn btn-primary" type="submit">Konfirmasi Denda Sudah Dibayar</button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('admin.transaksi.tanggal-pengembalian', $item->id) }}" method="POST" class="schedule-form">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="date" name="tanggal_selesai" value="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}" required>
+                                        <button class="btn btn-soft" type="submit">Simpan Tanggal Pengembalian</button>
+                                    </form>
+                                    <form action="{{ route('admin.transaksi.return', $item->id) }}" method="POST" class="return-form">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="date" name="tanggal_pengembalian" value="{{ now()->toDateString() }}" required>
+                                        <input type="text" name="kondisi_kembali" placeholder="Kondisi saat kembali" required>
+                                        <input type="text" name="catatan_pengembalian" placeholder="Catatan pengembalian" required>
+                                        <div class="fine-box full-row">
+                                            <strong>Denda Kerusakan</strong>
+                                            <div class="return-form">
+                                                <input type="text" name="jenis_kerusakan" placeholder="Jenis kerusakan, contoh: Lecet ringan">
+                                                <textarea name="deskripsi_kerusakan" rows="2" placeholder="Deskripsi kerusakan"></textarea>
+                                                <input type="number" name="denda_kerusakan" min="0" value="0" placeholder="Biaya denda kerusakan">
+                                            </div>
                                         </div>
-                                    </div>
-                                    <button class="btn btn-primary" type="submit">Kembalikan Mobil</button>
-                                </form>
+                                        <div class="fine-box full-row">
+                                            <strong>Denda Kehilangan</strong>
+                                            <div class="return-form">
+                                                <input type="text" name="barang_hilang" placeholder="Barang hilang, contoh: STNK / kunci">
+                                                <input type="number" name="biaya_kehilangan" min="0" value="0" placeholder="Biaya penggantian">
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary" type="submit">Kembalikan Mobil</button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5">Tidak ada mobil yang sedang disewa.</td></tr>
+                        <tr><td colspan="5">Tidak ada mobil yang sedang disewa atau menunggu pembayaran denda.</td></tr>
                     @endforelse
                 </tbody>
             </table>

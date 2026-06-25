@@ -147,7 +147,7 @@ class AdminController extends Controller
         $this->ensureAdmin();
 
         $transaksi = Penyewaan::with(['user', 'kendaraan'])
-            ->where('status_sewa', 'Pending')
+            ->whereIn('status_sewa', ['Pending', 'Menunggu Pembayaran Denda'])
             ->latest()
             ->get();
 
@@ -547,6 +547,16 @@ class AdminController extends Controller
     {
         $this->ensureAdmin();
 
+        if ($transaksi->total_denda <= 0) {
+            return redirect()->back()->with('error', 'Transaksi ini tidak memiliki denda.');
+        }
+
+        if (in_array($transaksi->status_denda, ['Dibayar', 'Denda Lunas'], true) || $transaksi->denda_dibayar_at) {
+            return redirect()->back()->with('success', 'Denda transaksi ini sudah tercatat lunas.');
+        }
+
+        $totalDenda = $transaksi->total_denda;
+
         $transaksi->update([
             'status_denda' => 'Denda Lunas',
             'denda_dibayar_at' => now(),
@@ -555,12 +565,12 @@ class AdminController extends Controller
 
         $this->notifyUser(
             $transaksi,
-            'Pembayaran denda berhasil diterima',
-            'Pembayaran denda berhasil diterima.',
+            'Denda sudah lunas',
+            'Pembayaran denda sebesar Rp ' . number_format($totalDenda, 0, ',', '.') . ' sudah diterima admin. Status sewa Anda sudah selesai.',
             'fine_paid'
         );
 
-        return redirect()->back()->with('success', 'Pembayaran denda berhasil diterima.');
+        return redirect()->back()->with('success', 'Pembayaran denda berhasil diterima dan notifikasi sudah dikirim ke user.');
     }
 
     public function storeServiceHistory(Request $request, Kendaraan $kendaraan)
